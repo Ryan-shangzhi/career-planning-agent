@@ -10,6 +10,7 @@ export default function Home() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchCity, setSearchCity] = useState('');
   const [error, setError] = useState('');
+  const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -133,6 +134,7 @@ export default function Home() {
                   <div
                     key={job.id}
                     className="p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="flex-1">
@@ -156,6 +158,19 @@ export default function Home() {
                         <p className="text-gray-500 text-xs">{job.experienceRequirement} · {job.educationRequirement}</p>
                       </div>
                     </div>
+                    {/* 职位详情展开区 */}
+                    {expandedJobId === job.id && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        {job.description ? (
+                          <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 leading-relaxed whitespace-pre-line max-h-60 overflow-y-auto">
+                            {job.description}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">暂无职位详情</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">来源：{job.source || '未知'}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
