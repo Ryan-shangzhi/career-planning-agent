@@ -213,6 +213,9 @@ class JobMatch(BaseModel):
     skills: List[str]
     match_score: float
     job_type: str
+    description: Optional[str] = None
+    source: Optional[str] = None
+    source_url: Optional[str] = None
 
 
 class EnhancedAnalysisResponse(BaseModel):
@@ -762,7 +765,10 @@ def analyze_career(request: AnalysisRequest, db: Session = Depends(get_db)):
             education_requirement=job.education_requirement,
             skills=job.skills.split(",") if job.skills else [],
             match_score=match_score,
-            job_type=get_job_type(job.title)
+            job_type=get_job_type(job.title),
+            description=job.description[:500] if job.description else None,
+            source=job.source,
+            source_url=job.source_url,
         ))
     
     matched_jobs.sort(key=lambda x: x.match_score, reverse=True)

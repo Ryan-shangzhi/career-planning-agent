@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { ArrowLeft, RefreshCw, Building2, DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Briefcase, Star, BookOpen } from 'lucide-react';
@@ -27,6 +28,8 @@ export default function Analysis() {
     reset();
     navigate('/');
   };
+
+  const [expandedJob, setExpandedJob] = useState<number | null>(null);
 
   const formatSalary = (value: number) => {
     if (value === 0) return '面议';
@@ -93,6 +96,32 @@ export default function Analysis() {
                       <p className="text-gray-500 text-xs">{job.experienceRequirement} · {job.educationRequirement}</p>
                     </div>
                   </div>
+                  {/* JD 详情 */}
+                  {job.description && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      >
+                        {expandedJob === job.id ? '▼ 收起详情' : '▶ 查看JD详情'}
+                      </button>
+                      {expandedJob === job.id && (
+                        <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 leading-relaxed whitespace-pre-line max-h-60 overflow-y-auto">
+                          {job.description}
+                          {job.sourceUrl && (
+                            <a
+                              href={job.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block mt-2 text-blue-600 hover:text-blue-800 text-xs"
+                            >
+                              🔗 查看原链接（{job.source}）
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

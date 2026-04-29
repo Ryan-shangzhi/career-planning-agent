@@ -40,6 +40,10 @@ export interface JobMatch {
   educationRequirement: string | null;
   skills: string[];
   matchScore: number;
+  jobType: string;
+  description?: string | null;
+  source?: string | null;
+  sourceUrl?: string | null;
 }
 
 export interface SkillRecommendation {

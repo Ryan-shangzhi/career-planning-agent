@@ -156,6 +156,17 @@ def fetch_liepin_detail(page, url):
             return best.trim();
         }''')
         if description:
+            # 清理猎聘页面噪音
+            noise_patterns = [
+                r'企业服务热线.*?ICP[^\n]*',
+                r'举报投诉.*?jubao[^\n]*',
+                r'津ICP备[^\n]*',
+                r'猎聘[^\n]*版权[^\n]*',
+                r'隐私政策[^\n]*',
+                r'用户协议[^\n]*',
+            ]
+            for pat in noise_patterns:
+                description = re.sub(pat, '', description).strip()
             return description[:3000]  # 限制长度
         return ''
     except Exception as e:
