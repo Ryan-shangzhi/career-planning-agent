@@ -20,11 +20,9 @@ export default function Home() {
     setError('');
     try {
       const data = await api.jobs.getJobs(searchKeyword || undefined, searchCity || undefined);
-      console.log('获取职位成功:', data);
       setJobs(data);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '获取职位失败';
-      console.error('获取职位失败:', errorMsg);
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -44,7 +42,6 @@ export default function Home() {
       await fetchJobs();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '爬取失败';
-      console.error('爬取失败:', errorMsg);
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -216,21 +213,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.8s ease-out;
-        }
-      `}</style>
+
     </div>
   );
 }

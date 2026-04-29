@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from models import Job, User, AnalysisResult, Company
 from database import get_db
 from crawler import crawl_jobs
@@ -161,6 +161,27 @@ class AnalysisRequest(BaseModel):
     user_experience: int
     target_job: str
     target_company: Optional[str] = None
+
+    @field_validator('user_skills')
+    @classmethod
+    def validate_skills(cls, v):
+        if not v or all(not s.strip() for s in v):
+            raise ValueError('至少需要填写一项技能')
+        return [s.strip() for s in v if s.strip()]
+
+    @field_validator('target_job')
+    @classmethod
+    def validate_target_job(cls, v):
+        if not v or not v.strip():
+            raise ValueError('目标岗位不能为空')
+        return v.strip()
+
+    @field_validator('user_experience')
+    @classmethod
+    def validate_experience(cls, v):
+        if v < 0:
+            raise ValueError('工作经验年限不能为负数')
+        return v
 
 
 class JobMatch(BaseModel):

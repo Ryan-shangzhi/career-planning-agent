@@ -1,5 +1,6 @@
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { JobMatch, SkillRecommendation } from '@/services/api';
 
 export interface UserSurvey {
@@ -117,18 +118,29 @@ const initialSurvey: UserSurvey = {
   targetSalary: '',
 };
 
-export const useAppStore = create<AppState>((set) => ({
-  survey: initialSurvey,
-  analysis: null,
-  isLoading: false,
-  
-  setSurvey: (survey) => set({ survey }),
-  setAnalysis: (analysis) => set({ analysis }),
-  setIsLoading: (loading) => set({ isLoading: loading }),
-  
-  reset: () => set({ 
-    survey: initialSurvey, 
-    analysis: null, 
-    isLoading: false 
-  }),
-}));
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      survey: initialSurvey,
+      analysis: null,
+      isLoading: false,
+
+      setSurvey: (survey) => set({ survey }),
+      setAnalysis: (analysis) => set({ analysis }),
+      setIsLoading: (loading) => set({ isLoading: loading }),
+
+      reset: () => set({
+        survey: initialSurvey,
+        analysis: null,
+        isLoading: false,
+      }),
+    }),
+    {
+      name: 'career-planning-storage',
+      partialize: (state) => ({
+        survey: state.survey,
+        analysis: state.analysis,
+      }),
+    }
+  )
+);

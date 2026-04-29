@@ -29,7 +29,7 @@ export default function Analysis() {
   };
 
   const formatSalary = (value: number) => {
-    return `${Math.round(value / 1000)}K`;
+    return `${Math.round(value / 1000)}`;
   };
 
   return (
@@ -107,12 +107,12 @@ export default function Analysis() {
               <h3 className="font-semibold text-gray-900">市场薪资分析</h3>
             </div>
             <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
-              {formatSalary(analysis.salaryAnalysis?.avg || 0)}K
+              {formatSalary(analysis.salaryAnalysis?.avg || 0)}
             </div>
             <p className="text-sm text-gray-600 mb-2">
-              薪资范围：{formatSalary(analysis.salaryAnalysis?.min || 0)}K - {formatSalary(analysis.salaryAnalysis?.max || 0)}K
+              薪资范围：{formatSalary(analysis.salaryAnalysis?.min || 0)} - {formatSalary(analysis.salaryAnalysis?.max || 0)}
             </p>
-            <p className="text-sm text-gray-600">中位数：{formatSalary(analysis.salaryAnalysis?.median || 0)}K</p>
+            <p className="text-sm text-gray-600">中位数：{formatSalary(analysis.salaryAnalysis?.median || 0)}</p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-xl">
