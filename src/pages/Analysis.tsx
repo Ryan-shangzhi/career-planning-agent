@@ -76,10 +76,10 @@ export default function Analysis() {
                       <div className="flex items-center gap-3 mb-2">
                         <h4 className="font-semibold text-gray-900">{job.title}</h4>
                         <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                          匹配度 {job.match_score}%
+                          匹配度 {job.matchScore}%
                         </span>
                       </div>
-                      <p className="text-gray-500 text-sm mb-2">{job.company_name} · {job.location}</p>
+                      <p className="text-gray-500 text-sm mb-2">{job.companyName} · {job.location}</p>
                       <div className="flex flex-wrap gap-2">
                         {job.skills?.slice(0, 4).map((skill, skillIdx) => (
                           <span key={skillIdx} className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">
@@ -89,8 +89,8 @@ export default function Analysis() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-blue-600 text-lg">{job.salary_range}</p>
-                      <p className="text-gray-500 text-xs">{job.experience_requirement} · {job.education_requirement}</p>
+                      <p className="font-semibold text-blue-600 text-lg">{job.salaryRange}</p>
+                      <p className="text-gray-500 text-xs">{job.experienceRequirement} · {job.educationRequirement}</p>
                     </div>
                   </div>
                 </div>

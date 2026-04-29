@@ -35,78 +35,78 @@ export default function Survey() {
         target_company: formData.targetCompany,
       };
       
-      const result: EnhancedAnalysisResponse = await api.analysis.analyze(analysisRequest);
+      const result: any = await api.analysis.analyze(analysisRequest);
       
-      const missingSkills = result.gap_analysis.skills
-        .filter(s => s.gap === '缺口')
-        .map(s => s.skill);
+      const missingSkills = result.gapAnalysis?.skills
+        ?.filter((s: any) => s.gap === '缺口')
+        .map((s: any) => s.skill) || [];
       
       const analysis = {
-        targetJob: result.target_job,
-        matchedJobs: result.matched_jobs,
+        targetJob: result.targetJob,
+        matchedJobs: result.matchedJobs,
         companyStructure: [],
-        requirements: result.matched_jobs.length > 0 
-          ? result.matched_jobs.slice(0, 3).map(j => `${j.company_name} - ${j.title} (${j.salary_range})`)
+        requirements: result.matchedJobs?.length > 0 
+          ? result.matchedJobs.slice(0, 3).map((j: any) => `${j.companyName} - ${j.title} (${j.salaryRange})`)
           : ['暂无匹配岗位数据'],
-        salaryRange: `${Math.round(result.salary_analysis.avg / 1000)}K-${Math.round(result.salary_analysis.max / 1000)}K`,
-        salaryAnalysis: result.salary_analysis,
-        competition: result.competition_analysis.supply_demand,
+        salaryRange: `${Math.round((result.salaryAnalysis?.avg || 0) / 1000)}K-${Math.round((result.salaryAnalysis?.max || 0) / 1000)}K`,
+        salaryAnalysis: result.salaryAnalysis || {},
+        competition: result.competitionAnalysis?.supplyDemand || '',
         gaps: missingSkills,
         difficulty: missingSkills.length > 3 ? '较大' : missingSkills.length > 0 ? '中等' : '较小',
-        shortTermPlan: result.action_plan.short_term,
-        midTermPlan: result.action_plan.medium_term,
-        longTermPlan: result.action_plan.long_term,
-        abilityComparison: result.gap_analysis.skills.map(s => ({
+        shortTermPlan: result.actionPlan?.shortTerm || [],
+        midTermPlan: result.actionPlan?.mediumTerm || [],
+        longTermPlan: result.actionPlan?.longTerm || [],
+        abilityComparison: (result.gapAnalysis?.skills || []).map((s: any) => ({
           dimension: s.skill,
           requirement: s.required ? '精通' : '了解',
-          current: s.user_has ? '精通' : '了解',
+          current: s.userHas ? '精通' : '了解',
           gap: s.gap,
         })),
         actionPlans: [
-          ...result.action_plan.short_term,
-          ...result.action_plan.medium_term,
-          ...result.action_plan.long_term,
+          ...(result.actionPlan?.shortTerm || []),
+          ...(result.actionPlan?.mediumTerm || []),
+          ...(result.actionPlan?.longTerm || []),
         ],
         estimatedTime: missingSkills.length > 3 ? '12-18个月' : missingSkills.length > 0 ? '6-12个月' : '3-6个月',
-        timeReasoning: `基于${result.matched_jobs.length}个匹配岗位分析，需补充${missingSkills.length}项核心技能`,
-        hardSkills: result.gap_analysis.skills.slice(0, 8).map(s => ({
+        timeReasoning: `基于${result.matchedJobs?.length || 0}个匹配岗位分析，需补充${missingSkills.length}项核心技能`,
+        hardSkills: (result.gapAnalysis?.skills || []).slice(0, 8).map((s: any) => ({
           name: s.skill,
-          level: s.user_has ? '精通' : '入门',
+          level: s.userHas ? '精通' : '入门',
           application: '工作中常用',
         })),
         softSkills: [],
         companyRequirements: {
-          education: result.gap_analysis.education.required,
+          education: result.gapAnalysis?.education?.required || '',
           educationFlexibility: '中等',
-          experience: result.gap_analysis.experience.required,
+          experience: result.gapAnalysis?.experience?.required || '',
           careerChange: '可行',
           certificates: '',
           '隐性偏好': '',
         },
-        gapAnalysis: result.gap_analysis.skills.map(s => ({
+        gapAnalysis: (result.gapAnalysis?.skills || []).map((s: any) => ({
           dimension: s.skill,
           target: s.required ? '精通' : '了解',
-          current: s.user_has ? '精通' : '了解',
+          current: s.userHas ? '精通' : '了解',
           gap: s.gap,
-          difficulty: s.gap === '达标' ? '小' : s.user_has ? '中' : '大',
+          difficulty: s.gap === '达标' ? '小' : s.userHas ? '中' : '大',
           frequency: s.frequency,
         })),
         actionPath: {
-          shortTerm: result.action_plan.short_term,
-          midTerm: result.action_plan.medium_term,
-          longTerm: result.action_plan.long_term,
+          shortTerm: result.actionPlan?.shortTerm || [],
+          midTerm: result.actionPlan?.mediumTerm || [],
+          longTerm: result.actionPlan?.longTerm || [],
         },
         competitionAnalysis: {
-          supplyDemand: result.competition_analysis.supply_demand,
-          competitorProfile: result.competition_analysis.competitor_profile,
+          supplyDemand: result.competitionAnalysis?.supplyDemand || '',
+          competitorProfile: result.competitionAnalysis?.competitorProfile || '',
           userCompetitiveness: {
-            strengths: result.competition_analysis.user_advantage,
-            weaknesses: result.competition_analysis.user_disadvantage,
+            strengths: result.competitionAnalysis?.userAdvantage || '',
+            weaknesses: result.competitionAnalysis?.userDisadvantage || '',
           },
-          marketInsight: result.competition_analysis.market_insight,
+          marketInsight: result.competitionAnalysis?.marketInsight || '',
         },
         promotionPath: [],
-        skillRecommendations: result.skill_recommendations.recommendations,
+        skillRecommendations: result.skillRecommendations?.recommendations || [],
       };
       
       setAnalysis(analysis);

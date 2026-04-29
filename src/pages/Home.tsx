@@ -137,7 +137,7 @@ export default function Home() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900 mb-1">{job.title}</h4>
-                        <p className="text-gray-500 text-sm mb-2">{job.company_name} · {job.location}</p>
+                        <p className="text-gray-500 text-sm mb-2">{job.companyName} · {job.location}</p>
                         <div className="flex flex-wrap gap-2">
                           {job.skills?.split(',').slice(0, 3).map((skill, idx) => (
                             <span
@@ -151,9 +151,9 @@ export default function Home() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-blue-600">
-                          {formatSalary(job.salary_min, job.salary_max)}
+                          {formatSalary(job.salaryMin, job.salaryMax)}
                         </p>
-                        <p className="text-gray-500 text-xs">{job.experience_requirement} · {job.education_requirement}</p>
+                        <p className="text-gray-500 text-xs">{job.experienceRequirement} · {job.educationRequirement}</p>
                       </div>
                     </div>
                   </div>

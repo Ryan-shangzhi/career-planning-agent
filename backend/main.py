@@ -2,12 +2,26 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 from models import Job, User, AnalysisResult, Company
 from database import get_db
 from crawler_real import crawl_learnblockchain, crawl_liepin
 import json
 import re
+
+
+def to_camel_case(data):
+    """递归将 dict 的 key 从 snake_case 转为 camelCase"""
+    if isinstance(data, dict):
+        result = {}
+        for key, value in data.items():
+            # 将 snake_case 转为 camelCase
+            camel_key = ''.join(word.capitalize() if i > 0 else word for i, word in enumerate(key.split('_')))
+            result[camel_key] = to_camel_case(value)
+        return result
+    elif isinstance(data, list):
+        return [to_camel_case(item) for item in data]
+    return data
 
 app = FastAPI(title="职业规划顾问 API", version="1.0")
 
@@ -185,6 +199,10 @@ class AnalysisRequest(BaseModel):
 
 
 class JobMatch(BaseModel):
+    model_config = ConfigDict(alias_generator=lambda s: ''.join(
+        word.capitalize() if i > 0 else word for i, word in enumerate(s.split('_'))
+    ), populate_by_name=True)
+
     id: int
     title: str
     company_name: str
@@ -198,6 +216,10 @@ class JobMatch(BaseModel):
 
 
 class EnhancedAnalysisResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=lambda s: ''.join(
+        word.capitalize() if i > 0 else word for i, word in enumerate(s.split('_'))
+    ), populate_by_name=True)
+
     target_job: str
     job_type: str
     matched_jobs: List[JobMatch]
@@ -269,7 +291,7 @@ def get_jobs(
             "created_at": job.created_at.isoformat()
         })
     
-    return result
+    return to_camel_case(result)
 
 
 @app.post("/api/jobs/search", response_model=List[dict])
@@ -571,14 +593,42 @@ def filter_jobs_by_experience(jobs: List[Job], user_experience: int) -> List[Job
 
 
 def extract_common_skills(jobs: List[Job]) -> List[tuple]:
+    """从 job.skills 字段和 JD 描述文本中提取技能关键词"""
     skill_count = {}
+    # 常见技能关键词列表（用于从 JD 文本中提取）
+    tech_keywords = [
+        "JavaScript", "TypeScript", "React", "Vue", "Angular", "Node.js", "Next.js", "Nuxt.js",
+        "HTML5", "CSS3", "Sass", "Less", "Tailwind", "Webpack", "Vite", "ES6",
+        "Java", "Python", "Go", "C++", "Rust", "PHP", "Ruby", "Swift", "Kotlin",
+        "Spring Boot", "Django", "Flask", "Express", "Gin", "FastAPI",
+        "MySQL", "PostgreSQL", "MongoDB", "Redis", "Elasticsearch", "ClickHouse",
+        "Docker", "Kubernetes", "Jenkins", "CI/CD", "Git",
+        "AWS", "Azure", "GCP", "Linux", "Nginx",
+        "微服务", "分布式", "高并发", "消息队列", "Kafka", "RabbitMQ",
+        "机器学习", "深度学习", "NLP", "数据分析", "数据挖掘",
+        "Figma", "Sketch", "Photoshop", "Illustrator", "UI设计", "UX设计",
+        "产品经理", "项目管理", "Scrum", "Agile",
+        "Solidity", "Web3", "区块链", "智能合约", "DeFi",
+        "Flutter", "React Native", "iOS", "Android", "小程序",
+        "GraphQL", "RESTful", "gRPC", "WebSocket",
+        "TDD", "单元测试", "性能优化", "SEO",
+    ]
+
     for job in jobs:
+        # 1. 从 skills 字段提取
         if job.skills:
             for skill in job.skills.split(","):
                 skill = skill.strip()
                 if skill:
                     skill_count[skill] = skill_count.get(skill, 0) + 1
-    
+
+        # 2. 从 JD 描述文本中提取
+        if job.description:
+            desc = job.description
+            for keyword in tech_keywords:
+                if keyword.lower() in desc.lower():
+                    skill_count[keyword] = skill_count.get(keyword, 0) + 1
+
     sorted_skills = sorted(skill_count.items(), key=lambda x: x[1], reverse=True)
     return sorted_skills
 
@@ -754,9 +804,9 @@ def analyze_career(request: AnalysisRequest, db: Session = Depends(get_db)):
     missing_skills = []
     transferable_skills = []
     
-    for skill, count in all_skills[:10]:
+    for skill, count in all_skills[:15]:
         skill_lower = skill.lower()
-        has_skill = skill_lower in user_skills
+        has_skill = any(skill_lower == us.lower() for us in user_skills)
         # 检查是否可以从其他技能迁移过来
         is_transferable = False
         if not has_skill:
@@ -919,7 +969,7 @@ def analyze_career(request: AnalysisRequest, db: Session = Depends(get_db)):
         db.add(analysis_result)
         db.commit()
     
-    return EnhancedAnalysisResponse(
+    response_data = EnhancedAnalysisResponse(
         target_job=target_job,
         job_type=target_job_type,
         matched_jobs=matched_jobs[:5],
@@ -940,6 +990,8 @@ def analyze_career(request: AnalysisRequest, db: Session = Depends(get_db)):
         salary_analysis=salary_analysis,
         skill_recommendations=skill_recommendations
     )
+    # 转换为 camelCase（包括嵌套 dict）
+    return to_camel_case(response_data.model_dump())
 
 
 @app.get("/api/companies", response_model=List[dict])
@@ -956,13 +1008,13 @@ def get_companies(
     
     companies = query.all()
     
-    return [{
+    return to_camel_case([{
         "id": c.id,
         "name": c.name,
         "industry": c.industry,
         "company_type": c.company_type,
         "description": c.description
-    } for c in companies]
+    } for c in companies])
 
 
 if __name__ == "__main__":

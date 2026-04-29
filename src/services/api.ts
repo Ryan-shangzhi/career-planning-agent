@@ -17,29 +17,29 @@ const BASE_URL = getBaseURL();
 export interface Job {
   id: number;
   title: string;
-  company_name: string;
+  companyName: string;
   industry: string | null;
   location: string | null;
-  salary_min: number | null;
-  salary_max: number | null;
-  experience_requirement: string | null;
-  education_requirement: string | null;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  experienceRequirement: string | null;
+  educationRequirement: string | null;
   description: string | null;
   skills: string | null;
   source: string | null;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface JobMatch {
   id: number;
   title: string;
-  company_name: string;
+  companyName: string;
   location: string | null;
-  salary_range: string;
-  experience_requirement: string | null;
-  education_requirement: string | null;
+  salaryRange: string;
+  experienceRequirement: string | null;
+  educationRequirement: string | null;
   skills: string[];
-  match_score: number;
+  matchScore: number;
 }
 
 export interface SkillRecommendation {
