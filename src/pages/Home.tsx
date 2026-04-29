@@ -1,9 +1,61 @@
-
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Target, TrendingUp, BrainCircuit } from 'lucide-react';
+import { Briefcase, Target, TrendingUp, BrainCircuit, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { api, Job } from '@/services/api';
 
 export default function Home() {
   const navigate = useNavigate();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchCity, setSearchCity] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api.jobs.getJobs(searchKeyword || undefined, searchCity || undefined);
+      console.log('获取职位成功:', data);
+      setJobs(data);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : '获取职位失败';
+      console.error('获取职位失败:', errorMsg);
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCrawl = async () => {
+    if (!searchKeyword) {
+      setError('请先输入搜索关键词');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    try {
+      await api.crawl.crawlJobs(searchKeyword, searchCity || '北京', 1);
+      await fetchJobs();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : '爬取失败';
+      console.error('爬取失败:', errorMsg);
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatSalary = (min: number | null, max: number | null) => {
+    if (!min && !max) return '面议';
+    if (!max) return `${(min || 0) / 1000}K+`;
+    return `${(min || 0) / 1000}K-${max / 1000}K`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -55,6 +107,91 @@ export default function Home() {
             ))}
           </div>
 
+          {/* 职位搜索 */}
+          <div className="bg-white rounded-3xl p-6 shadow-xl mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">职位搜索</h3>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                ⚠️ {error}
+              </div>
+            )}
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="搜索职位关键词..."
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              <input
+                type="text"
+                placeholder="城市（如：北京）"
+                value={searchCity}
+                onChange={(e) => setSearchCity(e.target.value)}
+                className="md:w-48 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+              />
+              <button
+                onClick={fetchJobs}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-5 h-5" />}
+                搜索
+              </button>
+              <button
+                onClick={handleCrawl}
+                disabled={loading || !searchKeyword}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                爬取职位
+              </button>
+            </div>
+          </div>
+
+          {/* 职位列表 */}
+          {jobs.length > 0 && (
+            <div className="bg-white rounded-3xl p-6 shadow-xl mb-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">最新职位</h3>
+              <div className="space-y-4">
+                {jobs.slice(0, 5).map((job) => (
+                  <div
+                    key={job.id}
+                    className="p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:shadow-md transition-all cursor-pointer"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{job.title}</h4>
+                        <p className="text-gray-500 text-sm mb-2">{job.company_name} · {job.location}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {job.skills?.split(',').slice(0, 3).map((skill, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full"
+                            >
+                              {skill.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-blue-600">
+                          {formatSalary(job.salary_min, job.salary_max)}
+                        </p>
+                        <p className="text-gray-500 text-xs">{job.experience_requirement} · {job.education_requirement}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 流程介绍 */}
           <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
             <h2 className="text-3xl font-bold text-gray-900 text-center mb-10">
@@ -97,4 +234,3 @@ export default function Home() {
     </div>
   );
 }
-

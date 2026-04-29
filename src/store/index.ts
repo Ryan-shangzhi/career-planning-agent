@@ -1,5 +1,6 @@
 
 import { create } from 'zustand';
+import { JobMatch, SkillRecommendation } from '@/services/api';
 
 export interface UserSurvey {
   currentProfession: string;
@@ -44,6 +45,7 @@ export interface GapItem {
   current: string;
   gap: string;
   difficulty: string;
+  frequency?: number;
 }
 
 export interface ActionPath {
@@ -59,12 +61,23 @@ export interface CompetitionAnalysis {
     strengths: string;
     weaknesses: string;
   };
+  marketInsight?: string;
+}
+
+export interface SalaryAnalysis {
+  min: number;
+  max: number;
+  avg: number;
+  median: number;
 }
 
 export interface AnalysisResult {
+  targetJob: string;
+  matchedJobs: JobMatch[];
   companyStructure: string[];
   requirements: string[];
   salaryRange: string;
+  salaryAnalysis: SalaryAnalysis;
   competition: string;
   gaps: string[];
   difficulty: string;
@@ -82,6 +95,7 @@ export interface AnalysisResult {
   actionPath: ActionPath;
   competitionAnalysis: CompetitionAnalysis;
   promotionPath: string[];
+  skillRecommendations: SkillRecommendation[];
 }
 
 interface AppState {
@@ -118,4 +132,3 @@ export const useAppStore = create<AppState>((set) => ({
     isLoading: false 
   }),
 }));
-

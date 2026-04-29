@@ -851,9 +851,17 @@ export function generateAnalysis(survey: UserSurvey): AnalysisResult {
   companyStructure = validateCompanyStructure(companyStructure, industryType);
   
   return {
+    targetJob: survey.targetPosition,
+    matchedJobs: [],
     companyStructure,
     requirements,
     salaryRange,
+    salaryAnalysis: {
+      min: 15000,
+      max: 45000,
+      avg: 25000,
+      median: 22000
+    },
     competition,
     gaps,
     difficulty,
@@ -870,7 +878,8 @@ export function generateAnalysis(survey: UserSurvey): AnalysisResult {
     gapAnalysis,
     actionPath,
     competitionAnalysis,
-    promotionPath
+    promotionPath,
+    skillRecommendations: []
   };
 }
 

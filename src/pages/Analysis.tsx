@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
-import { ArrowLeft, RefreshCw, Building2, DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock, Calendar, Target } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Building2, DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Briefcase, Star, BookOpen } from 'lucide-react';
 
 export default function Analysis() {
   const navigate = useNavigate();
@@ -28,6 +28,10 @@ export default function Analysis() {
     navigate('/');
   };
 
+  const formatSalary = (value: number) => {
+    return `${Math.round(value / 1000)}K`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -48,7 +52,6 @@ export default function Analysis() {
           </button>
         </div>
 
-        {/* 标题区域 */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             你的职业规划分析报告
@@ -58,23 +61,58 @@ export default function Analysis() {
           </p>
         </div>
 
-        {/* 信息收集结果 */}
+        {analysis.matchedJobs && analysis.matchedJobs.length > 0 && (
+          <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+              <Briefcase className="w-7 h-7 text-blue-600" />
+              匹配岗位推荐（基于真实职位数据）
+            </h2>
+            <div className="space-y-4">
+              {analysis.matchedJobs.map((job, idx) => (
+                <div key={job.id || idx} className="p-5 border border-gray-100 rounded-xl hover:border-blue-200 hover:shadow-md transition-all">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h4 className="font-semibold text-gray-900">{job.title}</h4>
+                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                          匹配度 {job.match_score}%
+                        </span>
+                      </div>
+                      <p className="text-gray-500 text-sm mb-2">{job.company_name} · {job.location}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {job.skills?.slice(0, 4).map((skill, skillIdx) => (
+                          <span key={skillIdx} className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-blue-600 text-lg">{job.salary_range}</p>
+                      <p className="text-gray-500 text-xs">{job.experience_requirement} · {job.education_requirement}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-6 mb-10">
           <div className="bg-white rounded-2xl p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
                 <Building2 className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-semibold text-gray-900">组织架构</h3>
+              <h3 className="font-semibold text-gray-900">市场薪资分析</h3>
             </div>
-            <ul className="space-y-2">
-              {analysis.companyStructure.map((item, idx) => (
-                <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
+            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+              {formatSalary(analysis.salaryAnalysis?.avg || 0)}K
+            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              薪资范围：{formatSalary(analysis.salaryAnalysis?.min || 0)}K - {formatSalary(analysis.salaryAnalysis?.max || 0)}K
+            </p>
+            <p className="text-sm text-gray-600">中位数：{formatSalary(analysis.salaryAnalysis?.median || 0)}K</p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-xl">
@@ -82,7 +120,7 @@ export default function Analysis() {
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-semibold text-gray-900">薪资水平</h3>
+              <h3 className="font-semibold text-gray-900">目标薪资</h3>
             </div>
             <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-3">
               {analysis.salaryRange}
@@ -101,11 +139,10 @@ export default function Analysis() {
           </div>
         </div>
 
-        {/* 岗位要求 */}
         <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <Target className="w-7 h-7 text-blue-600" />
-            岗位招聘要求
+            岗位招聘要求（来自真实职位）
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
             {analysis.requirements.map((req, idx) => (
@@ -117,43 +154,48 @@ export default function Analysis() {
           </div>
         </div>
 
-        {/* 一、目标岗位能力图谱 */}
         <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <Target className="w-7 h-7 text-blue-600" />
             一、目标岗位能力图谱
           </h2>
           
-          {/* 1. 硬技能清单 */}
           <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">1. 硬技能清单（具体到技能名称+熟练程度）</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">1. 硬技能清单（基于职位数据分析）</h3>
             <div className="p-4 bg-blue-50 rounded-xl">
-              <p className="text-gray-700">
+              <div className="flex flex-wrap gap-3">
                 {analysis.hardSkills.map((skill, idx) => (
-                  <span key={idx} className="inline-block mr-4 mb-2">
-                    {skill.name}（{skill.level}）{idx < analysis.hardSkills.length - 1 ? '、' : ''}
-                  </span>
+                  <div key={idx} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm">
+                    <span className="font-medium text-gray-800">{skill.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      skill.level === '精通' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {skill.level}
+                    </span>
+                  </div>
                 ))}
-              </p>
+              </div>
             </div>
           </div>
           
-          {/* 2. 软技能清单 */}
           <div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">2. 软技能清单（具体到行为表现）</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">2. 软技能清单</h3>
             <div className="p-4 bg-green-50 rounded-xl">
-              <p className="text-gray-700">
-                {analysis.softSkills.map((skill, idx) => (
-                  <span key={idx} className="inline-block mr-4 mb-2">
-                    {skill.name}（{skill.level}）{idx < analysis.softSkills.length - 1 ? '、' : ''}
-                  </span>
-                ))}
-              </p>
+              {analysis.softSkills.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {analysis.softSkills.map((skill, idx) => (
+                    <span key={idx} className="inline-block mr-4 mb-2">
+                      {skill.name}（{skill.level}）
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">根据岗位分析，建议培养：沟通协作、问题解决、学习能力、项目管理等软技能</p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* 二、目标公司/行业人员要求 */}
         <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <Building2 className="w-7 h-7 text-indigo-600" />
@@ -161,35 +203,30 @@ export default function Analysis() {
           </h2>
           
           <div className="grid md:grid-cols-2 gap-6">
-            {/* 1. 学历门槛 */}
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">1. 学历门槛</h3>
               <p className="text-gray-700 mb-2">{analysis.companyRequirements.education}</p>
               <p className="text-gray-600 text-sm">放宽空间：{analysis.companyRequirements.educationFlexibility}</p>
             </div>
             
-            {/* 2. 经验要求 */}
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">2. 经验要求</h3>
               <p className="text-gray-700 mb-2">{analysis.companyRequirements.experience}</p>
               <p className="text-gray-600 text-sm">转行/跨岗：{analysis.companyRequirements.careerChange}</p>
             </div>
             
-            {/* 3. 证书/资质 */}
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">3. 证书/资质</h3>
-              <p className="text-gray-700">{analysis.companyRequirements.certificates}</p>
+              <p className="text-gray-700">{analysis.companyRequirements.certificates || '暂无特殊要求'}</p>
             </div>
             
-            {/* 4. 隐性偏好 */}
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">4. 隐性偏好</h3>
-              <p className="text-gray-700">{analysis.companyRequirements['隐性偏好']}</p>
+              <p className="text-gray-700">{analysis.companyRequirements['隐性偏好'] || '大厂背景优先、开源项目经验加分'}</p>
             </div>
           </div>
         </div>
 
-        {/* 三、用户差距分析表 */}
         <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <AlertCircle className="w-7 h-7 text-orange-500" />
@@ -199,23 +236,29 @@ export default function Analysis() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">维度</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">技能</th>
                   <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">目标要求</th>
                   <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">用户现状</th>
-                  <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">差距程度</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">差距</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">出现频率</th>
                   <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">补足难度</th>
                 </tr>
               </thead>
               <tbody>
                 {analysis.gapAnalysis.map((item, idx) => (
                   <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.dimension}</td>
+                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 font-medium">{item.dimension}</td>
                     <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.target}</td>
                     <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.current}</td>
                     <td className={`border border-gray-300 px-4 py-3 text-sm font-medium ${
-                      item.gap === '小' ? 'text-green-600' : item.gap === '中' ? 'text-yellow-600' : 'text-orange-600'
+                      item.gap === '达标' ? 'text-green-600' : 'text-orange-600'
                     }`}>{item.gap}</td>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.difficulty}</td>
+                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                      {item.frequency ? `${item.frequency}次` : '-'}
+                    </td>
+                    <td className={`border border-gray-300 px-4 py-3 text-sm ${
+                      item.difficulty === '小' ? 'text-green-600' : item.difficulty === '中' ? 'text-yellow-600' : 'text-red-600'
+                    }`}>{item.difficulty}</td>
                   </tr>
                 ))}
               </tbody>
@@ -223,14 +266,34 @@ export default function Analysis() {
           </div>
         </div>
 
-        {/* 四、行动路径 */}
+        {analysis.skillRecommendations && analysis.skillRecommendations.length > 0 && (
+          <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+              <BookOpen className="w-7 h-7 text-teal-600" />
+              技能学习推荐
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {analysis.skillRecommendations.map((rec, idx) => (
+                <div key={idx} className="p-4 bg-teal-50 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="w-5 h-5 text-teal-600" />
+                    <h4 className="font-semibold text-gray-800">{rec.skill}</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-1">推荐资源：{rec.platform}</p>
+                  <p className="text-sm text-gray-600 mb-1">预计时间：{rec.duration}</p>
+                  <p className="text-sm text-gray-600">难度：{rec.difficulty}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <CheckCircle2 className="w-7 h-7 text-green-600" />
-            四、行动路径（必须具体）
+            四、行动路径
           </h2>
           
-          {/* 短期（1-3个月） */}
           <div className="mb-8">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">短期（1-3个月）</h3>
             <div className="space-y-4">
@@ -243,7 +306,6 @@ export default function Analysis() {
             </div>
           </div>
           
-          {/* 中期（3-6个月） */}
           <div className="mb-8">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">中期（3-6个月）</h3>
             <div className="space-y-4">
@@ -256,7 +318,6 @@ export default function Analysis() {
             </div>
           </div>
           
-          {/* 长期（6-12个月） */}
           <div>
             <h3 className="text-xl font-semibold text-gray-800 mb-4">长期（6-12个月）</h3>
             <div className="space-y-4">
@@ -270,52 +331,42 @@ export default function Analysis() {
           </div>
         </div>
 
-        {/* 五、竞争力度分析 */}
         <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <TrendingUp className="w-7 h-7 text-red-600" />
             五、竞争力度分析
           </h2>
           
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* 1. 该岗位供需情况 */}
+          <div className="grid md:grid-cols-2 gap-6">
             <div className="p-4 bg-red-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">1. 该岗位供需情况</h3>
               <p className="text-gray-700">{analysis.competitionAnalysis.supplyDemand}</p>
             </div>
             
-            {/* 2. 竞争者画像 */}
             <div className="p-4 bg-red-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">2. 竞争者画像</h3>
               <p className="text-gray-700 text-sm">{analysis.competitionAnalysis.competitorProfile}</p>
             </div>
             
-            {/* 3. 用户竞争力评估 */}
             <div className="p-4 bg-red-50 rounded-xl">
-              <h3 className="font-semibold text-gray-800 mb-2">3. 用户竞争力评估</h3>
-              <p className="text-gray-700 text-sm mb-2">优势：{analysis.competitionAnalysis.userCompetitiveness.strengths}</p>
-              <p className="text-gray-700 text-sm">劣势：{analysis.competitionAnalysis.userCompetitiveness.weaknesses}</p>
+              <h3 className="font-semibold text-gray-800 mb-2">3. 你的优势</h3>
+              <p className="text-gray-700 text-sm">{analysis.competitionAnalysis.userCompetitiveness.strengths}</p>
+            </div>
+            
+            <div className="p-4 bg-red-50 rounded-xl">
+              <h3 className="font-semibold text-gray-800 mb-2">4. 需要提升</h3>
+              <p className="text-gray-700 text-sm">{analysis.competitionAnalysis.userCompetitiveness.weaknesses}</p>
             </div>
           </div>
-        </div>
-
-        {/* 六、晋升路径预览 */}
-        <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-            <Target className="w-7 h-7 text-purple-600" />
-            六、晋升路径预览
-          </h2>
           
-          <div className="space-y-4">
-            {analysis.promotionPath.map((path, idx) => (
-              <div key={idx} className="p-5 bg-purple-50 rounded-2xl">
-                <p className="text-gray-700 text-center">{path}</p>
-              </div>
-            ))}
-          </div>
+          {analysis.competitionAnalysis.marketInsight && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+              <h3 className="font-semibold text-gray-800 mb-2">市场洞察</h3>
+              <p className="text-gray-700">{analysis.competitionAnalysis.marketInsight}</p>
+            </div>
+          )}
         </div>
 
-        {/* 达成时间评估 */}
         <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
             <Clock className="w-7 h-7 text-purple-600" />
@@ -329,9 +380,6 @@ export default function Analysis() {
           </div>
         </div>
 
-
-
-        {/* 底部按钮 */}
         <div className="mt-12 text-center">
           <button
             onClick={handleReset}
@@ -345,4 +393,3 @@ export default function Analysis() {
     </div>
   );
 }
-
