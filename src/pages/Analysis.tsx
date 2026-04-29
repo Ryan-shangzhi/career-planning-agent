@@ -29,7 +29,8 @@ export default function Analysis() {
   };
 
   const formatSalary = (value: number) => {
-    return `${Math.round(value / 1000)}`;
+    if (value === 0) return '面议';
+    return `${Math.round(value / 1000)}K`;
   };
 
   return (
