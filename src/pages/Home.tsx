@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Target, TrendingUp, BrainCircuit, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { Briefcase, Target, TrendingUp, BrainCircuit, Search, Loader2 } from 'lucide-react';
 import { api, Job } from '@/services/api';
 
 export default function Home() {
@@ -23,25 +23,6 @@ export default function Home() {
       setJobs(data);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '获取职位失败';
-      setError(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCrawl = async () => {
-    if (!searchKeyword) {
-      setError('请先输入搜索关键词');
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    try {
-      await api.crawl.crawlJobs(searchKeyword, searchCity || '北京', 1);
-      await fetchJobs();
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '爬取失败';
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -139,14 +120,6 @@ export default function Home() {
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-5 h-5" />}
                 搜索
-              </button>
-              <button
-                onClick={handleCrawl}
-                disabled={loading || !searchKeyword}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-                爬取职位
               </button>
             </div>
           </div>

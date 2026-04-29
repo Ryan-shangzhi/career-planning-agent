@@ -87,9 +87,84 @@ def close_popups(page):
             pass
 
 
+def fetch_learnblockchain_detail(page, url):
+    """进入登链社区职位详情页，抓取完整 JD"""
+    try:
+        page.goto(url, wait_until='networkidle', timeout=20000)
+        page.wait_for_timeout(2000)
+        description = page.evaluate('''() => {
+            // 登链社区详情页的正文内容
+            const el = document.querySelector('.post-content, .content, .detail, .article-content, .markdown-body, [class*="content"]');
+            if (el) return el.innerText.trim();
+            // fallback: 找包含"职位描述"或"任职资格"的文本块
+            const divs = document.querySelectorAll('div');
+            let best = '';
+            for (const d of divs) {
+                const t = d.innerText || '';
+                if ((t.includes('职位描述') || t.includes('任职资格') || t.includes('岗位职责') || t.includes('任职要求')) 
+                    && t.length > 100 && t.length < 10000) {
+                    return t.trim();
+                }
+                if (t.length > best.length && t.length < 10000 && d.children.length > 2) {
+                    best = t;
+                }
+            }
+            return best.trim();
+        }''')
+        # 清理 JD 文本
+        if description:
+            # 去掉尾部免责声明
+            desc = re.split(r'免责声明|发布于|阅读\s*\(', description)[0].strip()
+            # 去掉开头的 "全职" 等标签
+            desc = re.sub(r'^(全职|兼职|实习|远程)\s*', '', desc).strip()
+            return desc
+        return ''
+    except Exception as e:
+        return ''
+
+
+def fetch_liepin_detail(page, url):
+    """进入猎聘职位详情页，抓取完整 JD"""
+    try:
+        page.goto(url, wait_until='domcontentloaded', timeout=20000)
+        page.wait_for_timeout(5000)
+        description = page.evaluate('''() => {
+            // 猎聘详情页
+            const selectors = [
+                '.job-description', '.job-detail', '.job-description-content',
+                '[class*="job-description"]', '[class*="job-detail"]',
+                '[class*="job-content"]', '[class*="detail-content"]',
+                '.description-content', '.job-info-content'
+            ];
+            for (const sel of selectors) {
+                const el = document.querySelector(sel);
+                if (el && el.innerText.length > 50) return el.innerText.trim();
+            }
+            // fallback
+            const divs = document.querySelectorAll('div');
+            let best = '';
+            for (const d of divs) {
+                const t = d.innerText || '';
+                if ((t.includes('岗位职责') || t.includes('任职要求') || t.includes('职位描述') || t.includes('任职资格'))
+                    && t.length > 100 && t.length < 10000) {
+                    return t.trim();
+                }
+                if (t.length > best.length && t.length < 10000 && d.children.length > 2) {
+                    best = t;
+                }
+            }
+            return best.trim();
+        }''')
+        if description:
+            return description[:3000]  # 限制长度
+        return ''
+    except Exception as e:
+        return ''
+
+
 # ============ 登链社区爬虫 ============
 
-def crawl_learnblockchain(page, max_pages=5):
+def crawl_learnblockchain(page, max_pages=10):
     """爬取登链社区招聘页 - 已验证可用"""
     all_jobs = []
 
@@ -198,7 +273,21 @@ def crawl_learnblockchain(page, max_pages=5):
 
         if len(page_jobs) == 0 or pg >= max_pages:
             break
-        random_sleep(20, 30)
+        random_sleep(15, 25)
+
+    # 批量抓取 JD 详情
+    print(f"  📖 开始抓取 {len(all_jobs)} 条职位的 JD 详情...")
+    detail_count = 0
+    for i, job in enumerate(all_jobs):
+        if job.get('source_url') and not job.get('description'):
+            detail = fetch_learnblockchain_detail(page, job['source_url'])
+            if detail:
+                job['description'] = detail
+                detail_count += 1
+            # 每 5 个详情请求间隔一下
+            if (i + 1) % 5 == 0:
+                time.sleep(random.uniform(3, 8))
+    print(f"  📖 JD 详情抓取完成: {detail_count}/{len(all_jobs)} 条有详情")
 
     return all_jobs
 
@@ -310,11 +399,24 @@ def crawl_liepin(page, keyword, city, max_pages=3):
 
             if len(page_jobs) == 0 or pg >= max_pages:
                 break
-            random_sleep(20, 30)
+            random_sleep(15, 25)
 
         except Exception as e:
             print(f"    ❌ 第 {pg} 页出错: {e}")
             break
+
+    # 批量抓取 JD 详情（猎聘每 3 个抓 1 个，节省时间）
+    print(f"  📖 开始抓取 JD 详情（抽样）...")
+    detail_count = 0
+    sample_jobs = [j for j in all_jobs if j.get('source_url') and not j.get('description')]
+    for i, job in enumerate(sample_jobs):
+        if i % 3 == 0:  # 每 3 个抓 1 个
+            detail = fetch_liepin_detail(page, job['source_url'])
+            if detail:
+                job['description'] = detail
+                detail_count += 1
+            time.sleep(random.uniform(3, 6))
+    print(f"  📖 JD 详情抓取完成: {detail_count} 条")
 
     return all_jobs
 
@@ -438,16 +540,16 @@ def main():
 
         # 1. 登链社区（已验证可用）
         print("\n【1/3】爬取登链社区...")
-        lb_jobs = crawl_learnblockchain(page, max_pages=5)
+        lb_jobs = crawl_learnblockchain(page, max_pages=10)
         print(f"  📊 登链社区共 {len(lb_jobs)} 条")
         all_jobs.extend(lb_jobs)
 
         if len(lb_jobs) > 0:
-            random_sleep(30, 45)
+            random_sleep(20, 30)
 
         # 2. 猎聘（已验证可用）
         print("\n【2/3】爬取猎聘...")
-        liepin_jobs = crawl_liepin(page, keyword='前端开发', city='北京', max_pages=2)
+        liepin_jobs = crawl_liepin(page, keyword='前端开发', city='北京', max_pages=5)
         print(f"  📊 猎聘共 {len(liepin_jobs)} 条")
         all_jobs.extend(liepin_jobs)
 

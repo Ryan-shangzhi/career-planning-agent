@@ -5,7 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel, field_validator
 from models import Job, User, AnalysisResult, Company
 from database import get_db
-from crawler import crawl_jobs
+from crawler_real import crawl_learnblockchain, crawl_liepin
 import json
 import re
 
@@ -372,21 +372,68 @@ class CrawlRequest(BaseModel):
 
 @app.post("/api/crawl")
 def crawl_and_save_jobs(request: CrawlRequest, db: Session = Depends(get_db)):
-    jobs = crawl_jobs(request.keyword, request.city, request.pages)
+    """使用 Playwright 爬取真实招聘数据（较慢，约 30s-2min）"""
+    from playwright.sync_api import sync_playwright
     
-    for job_data in jobs:
+    all_jobs = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        )
+        context = browser.new_context(
+            viewport={'width': 1920, 'height': 1080},
+            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            locale='zh-CN',
+        )
+        page = context.new_page()
+        
+        # 爬取登链社区
+        try:
+            lb_jobs = crawl_learnblockchain(page, max_pages=request.pages)
+            all_jobs.extend(lb_jobs)
+        except Exception as e:
+            pass
+        
+        # 爬取猎聘
+        try:
+            liepin_jobs = crawl_liepin(page, keyword=request.keyword, city=request.city, max_pages=request.pages)
+            all_jobs.extend(liepin_jobs)
+        except Exception as e:
+            pass
+        
+        browser.close()
+    
+    # 保存到数据库
+    saved_count = 0
+    for job_data in all_jobs:
         existing_job = db.query(Job).filter(
-            Job.title == job_data['title'],
-            Job.company_name == job_data['company_name']
+            Job.title == job_data.get('title', ''),
+            Job.source_url == job_data.get('source_url', '')
         ).first()
         
         if not existing_job:
-            db_job = Job(**job_data)
+            db_job = Job(
+                title=job_data.get('title', ''),
+                company_name=job_data.get('company_name', ''),
+                industry=job_data.get('industry', ''),
+                job_type=job_data.get('category', '') or job_data.get('job_type', ''),
+                location=job_data.get('location', ''),
+                salary_min=job_data.get('salary_min') or 0,
+                salary_max=job_data.get('salary_max') or 0,
+                experience_requirement=job_data.get('experience_requirement', ''),
+                education_requirement=job_data.get('education_requirement', ''),
+                description=job_data.get('description', ''),
+                skills=job_data.get('skills', ''),
+                source=job_data.get('source', ''),
+                source_url=job_data.get('source_url', ''),
+            )
             db.add(db_job)
+            saved_count += 1
     
     db.commit()
     
-    return {"message": f"成功爬取 {len(jobs)} 条职位数据"}
+    return {"message": f"爬取完成：共 {len(all_jobs)} 条，新增 {saved_count} 条", "total": len(all_jobs), "new": saved_count}
 
 
 @app.post("/api/users", response_model=dict)
