@@ -63,6 +63,10 @@ export interface CompetitionAnalysis {
     weaknesses: string;
   };
   marketInsight?: string;
+  missingSkillsByGap?: {
+    大: string[];
+    中: string[];
+  };
 }
 
 export interface SalaryAnalysis {
@@ -72,31 +76,44 @@ export interface SalaryAnalysis {
   median: number;
 }
 
+export interface GapAnalysis {
+  skills: GapSkillItem[];
+  experience?: {
+    market_required?: string;
+    user: number;
+    gap: number;
+  };
+  education?: {
+    required: string;
+  };
+}
+
+export interface GapSkillItem {
+  skill: string;
+  requiredLevel: string;
+  userLevel: string;
+  gap: string;
+  difficulty: string;
+  frequency?: string;
+}
+
 export interface AnalysisResult {
   targetJob: string;
+  jobType: string;
   matchedJobs: JobMatch[];
-  companyStructure: string[];
-  requirements: string[];
-  salaryRange: string;
-  salaryAnalysis: SalaryAnalysis;
-  competition: string;
-  gaps: string[];
-  difficulty: string;
-  shortTermPlan: string[];
-  midTermPlan: string[];
-  longTermPlan: string[];
-  abilityComparison: AbilityItem[];
-  actionPlans: string[];
-  estimatedTime: string;
-  timeReasoning: string;
-  hardSkills: HardSkill[];
-  softSkills: SoftSkill[];
-  companyRequirements: CompanyRequirements;
-  gapAnalysis: GapItem[];
-  actionPath: ActionPath;
-  competitionAnalysis: CompetitionAnalysis;
-  promotionPath: string[];
-  skillRecommendations: SkillRecommendation[];
+  gapAnalysis: GapAnalysis;
+  actionPlan: any;
+  transitionAnalysis: any;
+  competitionAnalysis: any;
+  salaryAnalysis: any;
+  skillRecommendations: {
+    recommendations: SkillRecommendation[];
+    skillLevels: Record<string, string>;
+    impliedSkills?: Record<string, string>;
+    vueMigration?: any;
+  };
+  targetFeasibility: any;
+  marketSkills?: string[];
 }
 
 interface AppState {
@@ -136,10 +153,9 @@ export const useAppStore = create<AppState>()(
       }),
     }),
     {
-      name: 'career-planning-storage',
+      name: 'career-planning-storage-v2',
       partialize: (state) => ({
         survey: state.survey,
-        analysis: state.analysis,
       }),
     }
   )

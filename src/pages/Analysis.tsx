@@ -2,11 +2,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
-import { ArrowLeft, RefreshCw, Building2, DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Briefcase, Star, BookOpen } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Building2, DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Briefcase, Star, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Analysis() {
   const navigate = useNavigate();
   const { survey, analysis, reset } = useAppStore();
+
+  const [expandedJob, setExpandedJob] = useState<number | null>(null);
+  const [showAllMissingSkills, setShowAllMissingSkills] = useState(false);
 
   if (!survey || !analysis) {
     return (
@@ -29,10 +32,8 @@ export default function Analysis() {
     navigate('/');
   };
 
-  const [expandedJob, setExpandedJob] = useState<number | null>(null);
-
   const formatSalary = (value: number) => {
-    if (value === 0) return '面议';
+    if (!value || value === 0) return '未标注';
     return `${Math.round(value / 1000)}K`;
   };
 
@@ -78,8 +79,14 @@ export default function Analysis() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h4 className="font-semibold text-gray-900">{job.title}</h4>
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                          匹配度 {job.matchScore}%
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          job.matchStatus === '待评估' 
+                            ? 'bg-gray-100 text-gray-600' 
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {job.matchStatus === '待评估' 
+                            ? '待评估' 
+                            : `匹配度 ${job.matchScore}%`}
                         </span>
                       </div>
                       <p className="text-gray-500 text-sm mb-2">{job.companyName} · {job.location}</p>
@@ -92,7 +99,9 @@ export default function Analysis() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-blue-600 text-lg">{job.salaryRange}</p>
+                      <p className="font-semibold text-blue-600 text-lg">
+                        {job.salaryRange?.includes('面议') || job.salaryRange === '未提供' ? '未标注' : job.salaryRange}
+                      </p>
                       <p className="text-gray-500 text-xs">{job.experienceRequirement} · {job.educationRequirement}</p>
                     </div>
                   </div>
@@ -136,13 +145,37 @@ export default function Analysis() {
               </div>
               <h3 className="font-semibold text-gray-900">市场薪资分析</h3>
             </div>
-            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
-              {formatSalary(analysis.salaryAnalysis?.avg || 0)}
-            </div>
-            <p className="text-sm text-gray-600 mb-2">
-              薪资范围：{formatSalary(analysis.salaryAnalysis?.min || 0)} - {formatSalary(analysis.salaryAnalysis?.max || 0)}
-            </p>
-            <p className="text-sm text-gray-600">中位数：{formatSalary(analysis.salaryAnalysis?.median || 0)}</p>
+            {(() => {
+              const validSalaryCount = (analysis.salaryAnalysis?.validCount || 0);
+              const targetSalary = survey.targetSalary;
+              if (validSalaryCount < 10) {
+                return (
+                  <div>
+                    <div className="text-lg font-semibold text-gray-700 mb-3">样本薪资分布</div>
+                    <div className="border-t border-b border-gray-200 py-2 my-3">
+                      <p className="text-sm text-gray-600">当前样本中薪资标注的岗位有限</p>
+                      {targetSalary && (
+                        <div className="mt-3">
+                          <p className="text-sm font-medium text-indigo-700">你的目标 {targetSalary} 处于高级/资深区间</p>
+                          <p className="text-xs text-gray-500 mt-1">（参考：样本中高级岗 25K-40K）</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div>
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+                    {formatSalary(analysis.salaryAnalysis?.avg || 0)}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    薪资范围：{formatSalary(analysis.salaryAnalysis?.min || 0)} - {formatSalary(analysis.salaryAnalysis?.max || 0)}
+                  </p>
+                  <p className="text-sm text-gray-600">中位数：{formatSalary(analysis.salaryAnalysis?.median || 0)}</p>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-xl">
@@ -153,9 +186,9 @@ export default function Analysis() {
               <h3 className="font-semibold text-gray-900">目标薪资</h3>
             </div>
             <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-3">
-              {analysis.salaryRange}
+              {survey.targetSalary}
             </div>
-            <p className="text-sm text-gray-600">{analysis.competition}</p>
+            <p className="text-sm text-gray-600">{analysis.competitionAnalysis?.supplyDemand || '市场竞争分析中'}</p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-xl">
@@ -165,7 +198,7 @@ export default function Analysis() {
               </div>
               <h3 className="font-semibold text-gray-900">达成难度</h3>
             </div>
-            <p className="text-lg text-gray-800 font-semibold">{analysis.difficulty}</p>
+            <p className="text-lg text-gray-800 font-semibold">{analysis.targetFeasibility?.difficulty || '中等'}</p>
           </div>
         </div>
 
@@ -175,10 +208,10 @@ export default function Analysis() {
             岗位招聘要求（来自真实职位）
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
-            {analysis.requirements.map((req, idx) => (
+            {analysis.matchedJobs.slice(0, 4).map((job, idx) => (
               <div key={idx} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
                 <CheckCircle2 className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">{req}</span>
+                <span className="text-gray-700">{job.companyName} - {job.title} ({job.salaryRange?.includes('面议') || job.salaryRange === '未提供' ? '未标注' : job.salaryRange})</span>
               </div>
             ))}
           </div>
@@ -191,36 +224,58 @@ export default function Analysis() {
           </h2>
           
           <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">1. 硬技能清单（基于职位数据分析）</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">1. 你的技能（基于输入）</h3>
             <div className="p-4 bg-blue-50 rounded-xl">
               <div className="flex flex-wrap gap-3">
-                {analysis.hardSkills.map((skill, idx) => (
-                  <div key={idx} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm">
-                    <span className="font-medium text-gray-800">{skill.name}</span>
+                {Object.entries(analysis.skillRecommendations?.skillLevels || {}).map(([skill, level]) => (
+                  <div key={skill} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm">
+                    <span className="font-medium text-gray-800">{skill}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      skill.level === '精通' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      level === '精通' ? 'bg-green-100 text-green-700' :
+                      level === '熟练' ? 'bg-blue-100 text-blue-700' :
+                      level === '了解' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
                     }`}>
-                      {skill.level}
+                      {level}
                     </span>
                   </div>
                 ))}
               </div>
+              {Object.keys(analysis.skillRecommendations?.skillLevels || {}).length === 0 && (
+                <p className="text-gray-500">暂无技能数据</p>
+              )}
+              {analysis.skillRecommendations?.impliedSkills && Object.keys(analysis.skillRecommendations.impliedSkills).length > 0 && (
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <p className="text-sm text-gray-500 mb-2">隐含基础技能：</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(analysis.skillRecommendations.impliedSkills).map(([skill, level]) => (
+                      <div key={skill} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs">
+                        <span className="text-gray-600">{skill}</span>
+                        <span className="text-gray-400">({String(level)})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
           <div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">2. 软技能清单</h3>
-            <div className="p-4 bg-green-50 rounded-xl">
-              {analysis.softSkills.length > 0 ? (
-                <div className="flex flex-wrap gap-3">
-                  {analysis.softSkills.map((skill, idx) => (
-                    <span key={idx} className="inline-block mr-4 mb-2">
-                      {skill.name}（{skill.level}）
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">根据岗位分析，建议培养：沟通协作、问题解决、学习能力、项目管理等软技能</p>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">2. 目标岗位常见技能</h3>
+            <div className="p-4 bg-purple-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-3">以下是样本中出现频率较高的技能，可作为学习参考：</p>
+              <div className="flex flex-wrap gap-2">
+                {(analysis.marketSkills?.length ? analysis.marketSkills : ['Angular', '性能优化', '微前端', 'TypeScript进阶', 'Node.js', 'Webpack']).slice(0, 6).map((skill) => (
+                  <span key={skill} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+              {analysis.marketSkills?.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2">注：样本数据有限，以上为通用技能参考</p>
+              )}
+              {analysis.marketSkills?.length > 0 && analysis.marketSkills?.length < 10 && (
+                <p className="text-xs text-gray-400 mt-2">注：样本数据较少，供参考学习</p>
               )}
             </div>
           </div>
@@ -235,24 +290,28 @@ export default function Analysis() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">1. 学历门槛</h3>
-              <p className="text-gray-700 mb-2">{analysis.companyRequirements.education}</p>
-              <p className="text-gray-600 text-sm">放宽空间：{analysis.companyRequirements.educationFlexibility}</p>
+              <p className="text-gray-700 mb-2">{analysis.gapAnalysis.education?.required || '本科'}</p>
+              <p className="text-gray-600 text-sm">放宽空间：视具体公司而定</p>
             </div>
-            
+
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">2. 经验要求</h3>
-              <p className="text-gray-700 mb-2">{analysis.companyRequirements.experience}</p>
-              <p className="text-gray-600 text-sm">转行/跨岗：{analysis.companyRequirements.careerChange}</p>
+              <p className="text-gray-700 mb-1">
+                <span className="font-medium">你的经验：</span>{survey.experienceYears}年
+              </p>
+              <p className="text-gray-700 mb-2">
+                <span className="font-medium">样本中位数要求：</span>{analysis.gapAnalysis.experience?.market_required || '不限'}
+              </p>
             </div>
-            
+
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">3. 证书/资质</h3>
-              <p className="text-gray-700">{analysis.companyRequirements.certificates || '暂无特殊要求'}</p>
+              <p className="text-gray-700">暂无特殊要求</p>
             </div>
-            
+
             <div className="p-4 bg-indigo-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">4. 隐性偏好</h3>
-              <p className="text-gray-700">{analysis.companyRequirements['隐性偏好'] || '大厂背景优先、开源项目经验加分'}</p>
+              <p className="text-gray-700">大厂背景优先、开源项目经验加分</p>
             </div>
           </div>
         </div>
@@ -275,16 +334,33 @@ export default function Analysis() {
                 </tr>
               </thead>
               <tbody>
-                {analysis.gapAnalysis.map((item, idx) => (
+                {analysis.gapAnalysis.skills?.map((item, idx) => (
                   <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 font-medium">{item.dimension}</td>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.target}</td>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.current}</td>
+                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 font-medium">{item.skill}</td>
+                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.requiredLevel}</td>
+                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">{item.userLevel}</td>
                     <td className={`border border-gray-300 px-4 py-3 text-sm font-medium ${
-                      item.gap === '达标' ? 'text-green-600' : 'text-orange-600'
+                      item.gap === '小' ? 'text-green-600' : item.gap === '中' ? 'text-yellow-600' : 'text-red-600'
                     }`}>{item.gap}</td>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                      {item.frequency ? `${item.frequency}次` : '-'}
+                    <td className="border border-gray-300 px-4 py-3 text-sm">
+                      {(() => {
+                        const freq = item.frequency || '-';
+                        const freqMap: Record<string, { text: string; color: string; emoji: string }> = {
+                          '高频': { text: '刚需技能', color: '#ff4d4f', emoji: '🔥' },
+                          '中频': { text: '主流技能', color: '#1890ff', emoji: '📌' },
+                          '低频': { text: '专项技能', color: '#722ed1', emoji: '⭐' },
+                          '样本不足': { text: '进阶可选', color: '#8c8c8c', emoji: '📚' },
+                        };
+                        const map = freqMap[freq];
+                        if (map) {
+                          return (
+                            <span style={{ color: map.color }}>
+                              {map.emoji} {map.text}
+                            </span>
+                          );
+                        }
+                        return freq;
+                      })()}
                     </td>
                     <td className={`border border-gray-300 px-4 py-3 text-sm ${
                       item.difficulty === '小' ? 'text-green-600' : item.difficulty === '中' ? 'text-yellow-600' : 'text-red-600'
@@ -296,14 +372,14 @@ export default function Analysis() {
           </div>
         </div>
 
-        {analysis.skillRecommendations && analysis.skillRecommendations.length > 0 && (
+        {analysis.skillRecommendations?.recommendations && analysis.skillRecommendations.recommendations.length > 0 && (
           <div className="bg-white rounded-3xl p-8 shadow-2xl mb-10">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
               <BookOpen className="w-7 h-7 text-teal-600" />
               技能学习推荐
             </h2>
             <div className="grid md:grid-cols-2 gap-4">
-              {analysis.skillRecommendations.map((rec, idx) => (
+              {analysis.skillRecommendations.recommendations.map((rec, idx) => (
                 <div key={idx} className="p-4 bg-teal-50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <Star className="w-5 h-5 text-teal-600" />
@@ -327,10 +403,10 @@ export default function Analysis() {
           <div className="mb-8">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">短期（1-3个月）</h3>
             <div className="space-y-4">
-              {analysis.actionPath.shortTerm.map((action, idx) => (
+              {(analysis.actionPlan?.shortTerm?.items || []).map((action, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-4 bg-green-50 rounded-xl">
                   <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">{action}</span>
+                  <span className="text-gray-700 whitespace-pre-wrap">{action}</span>
                 </div>
               ))}
             </div>
@@ -339,10 +415,10 @@ export default function Analysis() {
           <div className="mb-8">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">中期（3-6个月）</h3>
             <div className="space-y-4">
-              {analysis.actionPath.midTerm.map((action, idx) => (
+              {(analysis.actionPlan?.mediumTerm?.items || []).map((action, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
                   <CheckCircle2 className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">{action}</span>
+                  <span className="text-gray-700 whitespace-pre-wrap">{action}</span>
                 </div>
               ))}
             </div>
@@ -351,10 +427,10 @@ export default function Analysis() {
           <div>
             <h3 className="text-xl font-semibold text-gray-800 mb-4">长期（6-12个月）</h3>
             <div className="space-y-4">
-              {analysis.actionPath.longTerm.map((action, idx) => (
+              {(analysis.actionPlan?.longTerm?.items || []).map((action, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-4 bg-purple-50 rounded-xl">
                   <CheckCircle2 className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">{action}</span>
+                  <span className="text-gray-700 whitespace-pre-wrap">{action}</span>
                 </div>
               ))}
             </div>
@@ -370,26 +446,62 @@ export default function Analysis() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="p-4 bg-red-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">1. 该岗位供需情况</h3>
-              <p className="text-gray-700">{analysis.competitionAnalysis.supplyDemand}</p>
+              <p className="text-gray-700">{analysis.competitionAnalysis?.supplyDemand || '暂无数据'}</p>
             </div>
             
             <div className="p-4 bg-red-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">2. 竞争者画像</h3>
-              <p className="text-gray-700 text-sm">{analysis.competitionAnalysis.competitorProfile}</p>
+              <p className="text-gray-700 text-sm">{analysis.competitionAnalysis?.competitorProfile || '暂无数据'}</p>
             </div>
             
             <div className="p-4 bg-red-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">3. 你的优势</h3>
-              <p className="text-gray-700 text-sm">{analysis.competitionAnalysis.userCompetitiveness.strengths}</p>
+              <p className="text-gray-700 text-sm">{analysis.competitionAnalysis?.userAdvantage || '暂无数据'}</p>
             </div>
             
             <div className="p-4 bg-red-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">4. 需要提升</h3>
-              <p className="text-gray-700 text-sm">{analysis.competitionAnalysis.userCompetitiveness.weaknesses}</p>
+              <p className="text-gray-700 text-sm mb-3">{analysis.competitionAnalysis?.userDisadvantage || '暂无数据'}</p>
+              {(() => {
+                const missingList = analysis.competitionAnalysis?.missingSkillsByGap || { 大: [], 中: [] };
+                console.log('[DEBUG] missingSkillsByGap:', missingList);
+                const allSkills = [...missingList.大, ...missingList.中];
+                console.log('[DEBUG] allSkills:', allSkills, 'length:', allSkills.length);
+                if (allSkills.length === 0) return null;
+                const displaySkills = showAllMissingSkills ? allSkills : allSkills.slice(0, 3);
+                return (
+                  <div className="mt-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {missingList.大.map((skill, i) => (
+                        <span key={i} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">
+                          {skill} (差距大)
+                        </span>
+                      ))}
+                      {missingList.中.map((skill, i) => (
+                        <span key={i} className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                          {skill} (差距中)
+                        </span>
+                      ))}
+                    </div>
+                    {allSkills.length > 3 && (
+                      <button
+                        onClick={() => setShowAllMissingSkills(!showAllMissingSkills)}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        {showAllMissingSkills ? (
+                          <><ChevronUp className="w-4 h-4" />收起</>
+                        ) : (
+                          <><ChevronDown className="w-4 h-4" />还有 {allSkills.length - 3} 项</>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
           
-          {analysis.competitionAnalysis.marketInsight && (
+          {analysis.competitionAnalysis?.marketInsight && (
             <div className="mt-6 p-4 bg-blue-50 rounded-xl">
               <h3 className="font-semibold text-gray-800 mb-2">市场洞察</h3>
               <p className="text-gray-700">{analysis.competitionAnalysis.marketInsight}</p>
@@ -404,8 +516,8 @@ export default function Analysis() {
           </h2>
           <div className="space-y-4">
             <div className="p-5 bg-purple-50 rounded-2xl">
-              <div className="text-2xl font-bold text-purple-700 mb-3">{analysis.estimatedTime}</div>
-              <div className="text-gray-700 whitespace-pre-line">{analysis.timeReasoning}</div>
+              <div className="text-2xl font-bold text-purple-700 mb-3">{analysis.actionPlan?.timeEstimate?.timeRange || '6-12个月'}</div>
+              <div className="text-gray-700 whitespace-pre-line">{analysis.actionPlan?.timeEstimate?.reasoning || '正在计算中...'}</div>
             </div>
           </div>
         </div>

@@ -2,13 +2,6 @@ function getBaseURL(): string {
   if (import.meta.env.DEV) {
     return '/api';
   }
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    const protocol = window.location.protocol;
-    if (host.includes('trae.cn') || host.includes('agent-sandbox')) {
-      return `${protocol}//${host}/api`;
-    }
-  }
   return '/api';
 }
 
@@ -40,6 +33,7 @@ export interface JobMatch {
   educationRequirement: string | null;
   skills: string[];
   matchScore: number;
+  matchStatus: string;
   jobType: string;
   description?: string | null;
   source?: string | null;
@@ -51,6 +45,51 @@ export interface SkillRecommendation {
   platform: string;
   duration: string;
   difficulty: string;
+  links?: {
+    course?: string;
+    courseCn?: string;
+    book?: string;
+    docs?: string;
+    practice?: string;
+    video?: string;
+    [key: string]: string | undefined;
+  };
+}
+
+export interface VueMigration {
+  applicable: boolean;
+  reason?: string;
+  leverageSkills?: string[];
+  keyDifferences?: Array<{
+    vueConcept: string;
+    reactEquivalent: string;
+    similarity: string;
+  }>;
+  learningStages?: Array<{
+    stage: string;
+    tasks: string[];
+    resources: Array<{
+      name: string;
+      url: string;
+    }>;
+  }>;
+  recommendedOrder?: string[];
+  estimatedTime?: string;
+}
+
+export interface TargetFeasibility {
+  feasibilityScore: number;
+  isReasonable: boolean;
+  highMatchCount: number;
+  totalAnalyzed: number;
+  matchRate: number;
+  warnings: Array<{
+    type: string;
+    message: string;
+    detail?: string;
+  }>;
+  suggestions: string[];
+  recommendation: string;
 }
 
 export interface AnalysisRequest {
@@ -59,20 +98,22 @@ export interface AnalysisRequest {
   user_experience: number;
   target_job: string;
   target_company?: string;
+  current_job?: string;
 }
 
 export interface GapAnalysis {
   skill: string;
   required: boolean;
-  user_has: boolean;
+  userHas: boolean;
   gap: string;
-  frequency: number;
+  frequency?: number;
 }
 
 export interface EnhancedAnalysisResponse {
-  target_job: string;
-  matched_jobs: JobMatch[];
-  gap_analysis: {
+  targetJob: string;
+  jobType: string;
+  matchedJobs: JobMatch[];
+  gapAnalysis: {
     skills: GapAnalysis[];
     experience: {
       required: string;
@@ -81,30 +122,98 @@ export interface EnhancedAnalysisResponse {
     };
     education: {
       required: string;
-      market_trend: string;
+      marketTrend?: string;
     };
   };
-  action_plan: {
-    short_term: string[];
-    medium_term: string[];
-    long_term: string[];
+  actionPlan: {
+    shortTerm: {
+      description: string;
+      skills: any[];
+      project: string;
+      interviewPrep: string[];
+      items: string[];
+    };
+    mediumTerm: {
+      description: string;
+      skills: any[];
+      project: string;
+      interviewPrep: string[];
+      items: string[];
+    };
+    longTerm: {
+      description: string;
+      skills: any[];
+      project: string;
+      interviewPrep: string[];
+      items: string[];
+    };
+    transitionType: string;
+    transitionAnalysis: {
+      type: string;
+      description: string;
+      advantageFocus: string;
+      actionPath: string[];
+      estimatedMonths: number;
+      transferableSkills: string[];
+    };
+    timeEstimate: {
+      timeRange: string;
+      estimatedMonths: number;
+      totalWeeks: number;
+      baseMonths: number;
+      finalMonths: number;
+      matchFactor: number;
+      transitionFactor: number;
+      experienceFactor: number;
+      reasoning: string;
+    };
   };
-  competition_analysis: {
-    supply_demand: string;
-    competitor_profile: string;
-    user_advantage: string;
-    user_disadvantage: string;
-    market_insight: string;
+  transitionAnalysis: any;
+  competitionAnalysis: {
+    supplyDemand: string;
+    competitorProfile: string;
+    userAdvantage: string;
+    userDisadvantage: string;
+    marketInsight?: string;
+    missingSkillsList?: string[];
+    missingSkillsByGap?: {
+      大: string[];
+      中: string[];
+    };
   };
-  salary_analysis: {
-    min: number;
-    max: number;
-    avg: number;
-    median: number;
+  salaryAnalysis: {
+    byLevel?: {
+      hasData: boolean;
+      level: string;
+      experienceYears: number;
+      keyValues: {
+        lower: number;
+        median: number;
+        upper: number;
+      };
+      displayLower: string;
+      displayMedian: string;
+      displayUpper: string;
+      rangeStr: string;
+    };
+    basicStats?: {
+      min: number;
+      max: number;
+      avg: number;
+      median: number;
+    };
+    min?: number;
+    max?: number;
+    avg?: number;
+    median?: number;
   };
-  skill_recommendations: {
+  skillRecommendations: {
     recommendations: SkillRecommendation[];
+    skillLevels: Record<string, string>;
+    vueMigration?: VueMigration;
   };
+  targetFeasibility: TargetFeasibility;
+  marketSkills?: string[];
 }
 
 export interface AnalysisResponse {
