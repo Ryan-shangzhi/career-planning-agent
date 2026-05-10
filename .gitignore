@@ -30,3 +30,23 @@ __pycache__/
 
 # Database
 *.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Data files
+backend/data/
+debug.log
+
+# Test scripts (use backend/tests/ instead)
+backend/test_*.py
+backend/diagnose_skills.py
+backend/regenerate_jd_skills.py
+backend/trace_skills.py
+backend/verify_fix.py
+
+# Root test files
+test-app.ts
+test-career-app.ts
